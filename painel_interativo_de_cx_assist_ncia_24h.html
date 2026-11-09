@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de CX & Auditoria - Assistência 24h Seguros</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #F8FAFC;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header Corporativo -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-blue-600 rounded-lg text-white">
+                    <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight">Inteligência Operacional & CX Seguros</h1>
+                    <p class="text-xs text-slate-400">Auditoria de SLAs e Monitoramento de NPS — Assistência 24h</p>
+                </div>
+            </div>
+
+            <!-- Navegação por Abas -->
+            <div class="flex items-center space-x-2 bg-slate-800/80 p-1 rounded-xl border border-slate-700">
+                <button id="tab-cx" onclick="switchTab('cx')" class="flex items-center space-x-2 px-4 py-1.5 text-xs font-semibold rounded-lg transition-all bg-blue-600 text-white shadow-sm">
+                    <i data-lucide="heart-handshake" class="w-4 h-4"></i>
+                    <span>1. Termômetro CX</span>
+                </button>
+                <button id="tab-audit" onclick="switchTab('audit')" class="flex items-center space-x-2 px-4 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-300 hover:text-white hover:bg-slate-700/50">
+                    <i data-lucide="truck" class="w-4 h-4"></i>
+                    <span>2. Auditoria de Prestadores</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+        <!-- Barra de Filtros Operacionais -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 card-shadow flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-2 text-slate-500 font-semibold text-xs uppercase tracking-wider">
+                <i data-lucide="filter" class="w-4 h-4 text-blue-600"></i>
+                <span>Filtros Globais:</span>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 flex-1 max-w-3xl">
+                <!-- Filtro Região -->
+                <div class="flex-1 min-w-[160px]">
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Região Geográfica</label>
+                    <select id="filter-region" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-700 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="ALL">Todas as Regiões</option>
+                        <option value="Capital">Capital</option>
+                        <option value="Região Metropolitana">Região Metropolitana</option>
+                        <option value="Interior">Interior</option>
+                        <option value="Litoral">Litoral</option>
+                    </select>
+                </div>
+
+                <!-- Filtro Serviço -->
+                <div class="flex-1 min-w-[160px]">
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Serviço Acionado</label>
+                    <select id="filter-service" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-700 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="ALL">Todos os Serviços</option>
+                        <option value="Pane Elétrica">Pane Elétrica</option>
+                        <option value="Pneu Furado">Pneu Furado</option>
+                        <option value="Pane Seca">Pane Seca</option>
+                        <option value="Colisão">Colisão</option>
+                        <option value="Chaveiro">Chaveiro</option>
+                    </select>
+                </div>
+
+                <!-- Filtro Status SLA -->
+                <div class="flex-1 min-w-[160px]">
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Status do SLA</label>
+                    <select id="filter-sla" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-700 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="ALL">Todos os Status</option>
+                        <option value="No Prazo">No Prazo</option>
+                        <option value="Atrasado">Atrasado</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="resetFilters()" class="px-3 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                Limpar Filtros
+            </button>
+        </div>
+
+        <!-- KPIs Executivos -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- KPI 1: Volume -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Acionamentos Totais</p>
+                    <h3 id="kpi-total" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                    <p class="text-[11px] text-slate-400 mt-1">Chamados computados</p>
+                </div>
+                <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                    <i data-lucide="phone-call" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- KPI 2: Cumprimento SLA -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cumprimento de SLA</p>
+                    <h3 id="kpi-sla" class="text-2xl font-bold text-slate-900 mt-1">0%</h3>
+                    <p class="text-[11px] text-slate-400 mt-1">Chegadas no tempo limite</p>
+                </div>
+                <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <i data-lucide="clock-check" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- KPI 3: NPS Score -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">NPS Score Oficial</p>
+                    <h3 id="kpi-nps" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                    <p id="kpi-nps-label" class="text-[11px] font-semibold mt-1">Calculando...</p>
+                </div>
+                <div id="kpi-nps-icon" class="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                    <i data-lucide="smile" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- KPI 4: Média de Atraso -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Atraso Médio</p>
+                    <h3 id="kpi-delay" class="text-2xl font-bold text-slate-900 mt-1">0 min</h3>
+                    <p class="text-[11px] text-slate-400 mt-1">Em chamados estourados</p>
+                </div>
+                <div class="p-3 bg-rose-50 text-rose-600 rounded-xl">
+                    <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- PÁGINA 1: VISÃO DE CX -->
+        <div id="view-cx" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Gráfico de Dispersão (Tempo vs NPS) -->
+                <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 card-shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-sm font-bold text-slate-900">Momento da Verdade: Tempo de Espera vs. NPS</h2>
+                            <p class="text-xs text-slate-500">Demonstração do ponto crítico de inflexão onde o atraso gera detratores</p>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 bg-amber-50 text-amber-700 font-medium rounded-md border border-amber-200">
+                            Ponto Crítico: > 45 min
+                        </span>
+                    </div>
+                    <div class="h-72">
+                        <canvas id="chartScatter"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Distribuição do NPS -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow">
+                    <div class="mb-4">
+                        <h2 class="text-sm font-bold text-slate-900">Composição do NPS</h2>
+                        <p class="text-xs text-slate-500">Proporção de Promotores, Neutros e Detratores</p>
+                    </div>
+                    <div class="h-72 flex items-center justify-center">
+                        <canvas id="chartDonutNPS"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico de NPS por Tipo de Serviço -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow">
+                <div class="mb-4">
+                    <h2 class="text-sm font-bold text-slate-900">Volume de Chamados por Tipo de Socorro e Perfil de Satisfação</h2>
+                    <p class="text-xs text-slate-500">Identificação dos serviços de maior atrito na jornada do segurado</p>
+                </div>
+                <div class="h-64">
+                    <canvas id="chartServiceBar"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- PÁGINA 2: AUDITORIA DE PRESTADORES -->
+        <div id="view-audit" class="space-y-6 hidden">
+            <!-- Tabela de Auditoria de Parcerias -->
+            <div class="bg-white rounded-2xl border border-slate-200 card-shadow overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-900">Matriz de Desempenho e Farol de Contratos</h2>
+                        <p class="text-xs text-slate-500">Auditoria automatizada por empresa parceira de guincho e socorro</p>
+                    </div>
+                    <div class="flex items-center space-x-3 text-xs">
+                        <span class="flex items-center space-x-1 text-emerald-600 font-medium"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span>SLA &ge; 85% (Conforme)</span></span>
+                        <span class="flex items-center space-x-1 text-amber-600 font-medium"><span class="w-2 h-2 rounded-full bg-amber-500"></span> <span>75-84% (Alerta)</span></span>
+                        <span class="flex items-center space-x-1 text-rose-600 font-medium"><span class="w-2 h-2 rounded-full bg-rose-500"></span> <span>&lt; 75% (Crítico)</span></span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-100">
+                            <tr>
+                                <th class="p-4">Empresa Prestadora</th>
+                                <th class="p-4 text-center">Volume Atendimentos</th>
+                                <th class="p-4 text-center">Cumprimento SLA (%)</th>
+                                <th class="p-4 text-center">Atraso Médio (Min)</th>
+                                <th class="p-4 text-center">NPS Médio</th>
+                                <th class="p-4 text-center">Status Contratual</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-providers-body" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Inserido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Gráfico Comparativo: Tempo Prometido vs Tempo Real Médio -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow">
+                <div class="mb-4">
+                    <h2 class="text-sm font-bold text-slate-900">Tempo Prometido em Contrato vs. Tempo Real de Atendimento (Por Prestador)</h2>
+                    <p class="text-xs text-slate-500">Avaliação do desvio operacional médio em minutos</p>
+                </div>
+                <div class="h-64">
+                    <canvas id="chartProviderComparison"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between text-xs text-slate-500">
+            <p>Projeto de Portfólio Executivo — <strong>Análise de Dados & CX em Seguros</strong></p>
+            <p>Desenvolvido para apresentação em seleção corporativa</p>
+        </div>
+    </footer>
+
+    <!-- Script de Geração de Dados e Lógica do Painel -->
+    <script>
+        // Seeded dataset simulation (500 acionamentos)
+        const generateDataset = () => {
+            const data = [];
+            const motivos = ['Pane Elétrica', 'Pneu Furado', 'Pane Seca', 'Colisão', 'Chaveiro'];
+            const regioes = ['Capital', 'Região Metropolitana', 'Interior', 'Litoral'];
+            const prestadores = ['Guinchos Rápido', 'Socorro Total', 'Auto Resgate 24h', 'Litoral Assist', 'Chaveiro Express'];
+
+            // Performance biases por prestador para gerar dados realistas
+            const providerBiases = {
+                'Guinchos Rápido': { delayChance: 0.15, extraDelay: 10 },
+                'Socorro Total': { delayChance: 0.22, extraDelay: 15 },
+                'Auto Resgate 24h': { delayChance: 0.28, extraDelay: 25 },
+                'Litoral Assist': { delayChance: 0.45, extraDelay: 40 }, // Problemático no Litoral
+                'Chaveiro Express': { delayChance: 0.12, extraDelay: 8 }
+            };
+
+            for (let i = 1; i <= 500; i++) {
+                const regiao = regioes[Math.floor(Math.random() * regioes.length)];
+                const motivo = motivos[Math.floor(Math.random() * motivos.length)];
+                const prestador = prestadores[Math.floor(Math.random() * prestadores.length)];
+
+                // Prometido
+                let slaPrometido = 60;
+                if (motivo === 'Chaveiro') slaPrometido = 45;
+                if (regiao === 'Interior') slaPrometido = 90;
+
+                // Tempo Real
+                const bias = providerBiases[prestador];
+                const isDelayed = Math.random() < bias.delayChance;
+
+                let tempoReal = 0;
+                if (!isDelayed) {
+                    tempoReal = Math.floor(Math.random() * (slaPrometido - 15)) + 15;
+                } else {
+                    tempoReal = slaPrometido + Math.floor(Math.random() * bias.extraDelay) + 10;
+                }
+
+                const statusSLA = tempoReal <= slaPrometido ? 'No Prazo' : 'Atrasado';
+                const minutosAtraso = statusSLA === 'Atrasado' ? tempoReal - slaPrometido : 0;
+
+                // NPS Nota
+                let notaNPS = 10;
+                if (statusSLA === 'No Prazo') {
+                    notaNPS = Math.random() < 0.8 ? (Math.floor(Math.random() * 2) + 9) : (Math.floor(Math.random() * 2) + 7);
+                } else {
+                    if (minutosAtraso > 45) {
+                        notaNPS = Math.floor(Math.random() * 3) + 1; // 1 to 3
+                    } else if (minutosAtraso > 20) {
+                        notaNPS = Math.floor(Math.random() * 3) + 4; // 4 to 6
+                    } else {
+                        notaNPS = Math.floor(Math.random() * 2) + 7; // 7 to 8
+                    }
+                }
+
+                let classNPS = 'Neutro';
+                if (notaNPS >= 9) classNPS = 'Promotor';
+                else if (notaNPS <= 6) classNPS = 'Detrator';
+
+                data.push({
+                    id: `AST-${String(i).padStart(5, '0')}`,
+                    regiao,
+                    motivo,
+                    prestador,
+                    slaPrometido,
+                    tempoReal,
+                    statusSLA,
+                    minutosAtraso,
+                    notaNPS,
+                    classNPS
+                });
+            }
+            return data;
+        };
+
+        const rawData = generateDataset();
+        let filteredData = [...rawData];
+
+        // Instâncias de Gráficos
+        let chartScatter, chartDonutNPS, chartServiceBar, chartProviderComparison;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initCharts();
+            applyFilters();
+        });
+
+        // Alternar Abas
+        function switchTab(tab) {
+            const tabCX = document.getElementById('tab-cx');
+            const tabAudit = document.getElementById('tab-audit');
+            const viewCX = document.getElementById('view-cx');
+            const viewAudit = document.getElementById('view-audit');
+
+            if (tab === 'cx') {
+                tabCX.className = "flex items-center space-x-2 px-4 py-1.5 text-xs font-semibold rounded-lg transition-all bg-blue-600 text-white shadow-sm";
+                tabAudit.className = "flex items-center space-x-2 px-4 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-300 hover:text-white hover:bg-slate-700/50";
+                viewCX.classList.remove('hidden');
+                viewAudit.classList.add('hidden');
+            } else {
+                tabAudit.className = "flex items-center space-x-2 px-4 py-1.5 text-xs font-semibold rounded-lg transition-all bg-blue-600 text-white shadow-sm";
+                tabCX.className = "flex items-center space-x-2 px-4 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-300 hover:text-white hover:bg-slate-700/50";
+                viewAudit.classList.remove('hidden');
+                viewCX.classList.add('hidden');
+            }
+        }
+
+        // Filtros
+        function applyFilters() {
+            const reg = document.getElementById('filter-region').value;
+            const serv = document.getElementById('filter-service').value;
+            const sla = document.getElementById('filter-sla').value;
+
+            filteredData = rawData.filter(item => {
+                const matchReg = reg === 'ALL' || item.regiao === reg;
+                const matchServ = serv === 'ALL' || item.motivo === serv;
+                const matchSLA = sla === 'ALL' || item.statusSLA === sla;
+                return matchReg && matchServ && matchSLA;
+            });
+
+            updateKPIs();
+            updateCharts();
+            updateTable();
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-region').value = 'ALL';
+            document.getElementById('filter-service').value = 'ALL';
+            document.getElementById('filter-sla').value = 'ALL';
+            applyFilters();
+        }
+
+        // Atualização de KPIs
+        function updateKPIs() {
+            const total = filteredData.length;
+            document.getElementById('kpi-total').innerText = total.toLocaleString('pt-BR');
+
+            if (total === 0) {
+                document.getElementById('kpi-sla').innerText = '0%';
+                document.getElementById('kpi-nps').innerText = '0';
+                document.getElementById('kpi-delay').innerText = '0 min';
+                return;
+            }
+
+            // SLA %
+            const noPrazo = filteredData.filter(d => d.statusSLA === 'No Prazo').length;
+            const slaPct = ((noPrazo / total) * 100).toFixed(1);
+            document.getElementById('kpi-sla').innerText = `${slaPct}%`;
+
+            // NPS Score
+            const promotores = filteredData.filter(d => d.classNPS === 'Promotor').length;
+            const detratores = filteredData.filter(d => d.classNPS === 'Detrator').length;
+            const npsScore = Math.round(((promotores - detratores) / total) * 100);
+
+            const npsElement = document.getElementById('kpi-nps');
+            const npsLabel = document.getElementById('kpi-nps-label');
+            npsElement.innerText = npsScore;
+
+            if (npsScore >= 75) {
+                npsElement.className = "text-2xl font-bold text-emerald-600 mt-1";
+                npsLabel.innerText = "Zona de Excelência";
+                npsLabel.className = "text-[11px] font-semibold text-emerald-600 mt-1";
+            } else if (npsScore >= 50) {
+                npsElement.className = "text-2xl font-bold text-amber-600 mt-1";
+                npsLabel.innerText = "Zona de Qualidade";
+                npsLabel.className = "text-[11px] font-semibold text-amber-600 mt-1";
+            } else {
+                npsElement.className = "text-2xl font-bold text-rose-600 mt-1";
+                npsLabel.innerText = "Zona Crítica de Churn";
+                npsLabel.className = "text-[11px] font-semibold text-rose-600 mt-1";
+            }
+
+            // Atraso Médio
+            const atrasados = filteredData.filter(d => d.statusSLA === 'Atrasado');
+            const avgDelay = atrasados.length > 0 
+                ? Math.round(atrasados.reduce((acc, curr) => acc + curr.minutosAtraso, 0) / atrasados.length)
+                : 0;
+            document.getElementById('kpi-delay').innerText = `${avgDelay} min`;
+        }
+
+        // Inicializar Gráficos
+        function initCharts() {
+            // Scatter Chart
+            const ctxScatter = document.getElementById('chartScatter').getContext('2d');
+            chartScatter = new Chart(ctxScatter, {
+                type: 'scatter',
+                data: { datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `Atendimento: ${ctx.raw.x} min | Nota NPS: ${ctx.raw.y}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Tempo Real de Atendimento (Minutos)' } },
+                        y: { title: { display: true, text: 'Nota de Satisfação NPS (1 a 10)' }, min: 1, max: 10 }
+                    }
+                }
+            });
+
+            // Donut NPS
+            const ctxDonut = document.getElementById('chartDonutNPS').getContext('2d');
+            chartDonutNPS = new Chart(ctxDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Promotores (9-10)', 'Neutros (7-8)', 'Detratores (1-6)'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#10B981', '#F59E0B', '#EF4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // Service Bar
+            const ctxService = document.getElementById('chartServiceBar').getContext('2d');
+            chartServiceBar = new Chart(ctxService, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { x: { stacked: true }, y: { stacked: true } },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+
+            // Provider Comparison
+            const ctxProv = document.getElementById('chartProviderComparison').getContext('2d');
+            chartProviderComparison = new Chart(ctxProv, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { title: { display: true, text: 'Minutos Médios' } } }
+                }
+            });
+        }
+
+        // Atualizar Dados dos Gráficos
+        function updateCharts() {
+            // Scatter Data
+            const promData = filteredData.filter(d => d.classNPS === 'Promotor').map(d => ({ x: d.tempoReal, y: d.notaNPS }));
+            const neuData = filteredData.filter(d => d.classNPS === 'Neutro').map(d => ({ x: d.tempoReal, y: d.notaNPS }));
+            const detData = filteredData.filter(d => d.classNPS === 'Detrator').map(d => ({ x: d.tempoReal, y: d.notaNPS }));
+
+            chartScatter.data.datasets = [
+                { label: 'Promotores', data: promData, backgroundColor: '#10B981' },
+                { label: 'Neutros', data: neuData, backgroundColor: '#F59E0B' },
+                { label: 'Detratores', data: detData, backgroundColor: '#EF4444' }
+            ];
+            chartScatter.update();
+
+            // Donut Data
+            const pCount = filteredData.filter(d => d.classNPS === 'Promotor').length;
+            const nCount = filteredData.filter(d => d.classNPS === 'Neutro').length;
+            const dCount = filteredData.filter(d => d.classNPS === 'Detrator').length;
+
+            chartDonutNPS.data.datasets[0].data = [pCount, nCount, dCount];
+            chartDonutNPS.update();
+
+            // Service Bar Data
+            const serviços = ['Pane Elétrica', 'Pneu Furado', 'Pane Seca', 'Colisão', 'Chaveiro'];
+            const pByServ = serviços.map(s => filteredData.filter(d => d.motivo === s && d.classNPS === 'Promotor').length);
+            const nByServ = serviços.map(s => filteredData.filter(d => d.motivo === s && d.classNPS === 'Neutro').length);
+            const dByServ = serviços.map(s => filteredData.filter(d => d.motivo === s && d.classNPS === 'Detrator').length);
+
+            chartServiceBar.data.labels = serviços;
+            chartServiceBar.data.datasets = [
+                { label: 'Promotores', data: pByServ, backgroundColor: '#10B981' },
+                { label: 'Neutros', data: nByServ, backgroundColor: '#F59E0B' },
+                { label: 'Detratores', data: dByServ, backgroundColor: '#EF4444' }
+            ];
+            chartServiceBar.update();
+
+            // Provider Comparison Chart
+            const prestadores = ['Guinchos Rápido', 'Socorro Total', 'Auto Resgate 24h', 'Litoral Assist', 'Chaveiro Express'];
+            const prometidos = prestadores.map(p => {
+                const subset = filteredData.filter(d => d.prestador === p);
+                return subset.length ? Math.round(subset.reduce((a, b) => a + b.slaPrometido, 0) / subset.length) : 0;
+            });
+            const reais = prestadores.map(p => {
+                const subset = filteredData.filter(d => d.prestador === p);
+                return subset.length ? Math.round(subset.reduce((a, b) => a + b.tempoReal, 0) / subset.length) : 0;
+            });
+
+            chartProviderComparison.data.labels = prestadores;
+            chartProviderComparison.data.datasets = [
+                { label: 'SLA Prometido Média (Min)', data: prometidos, backgroundColor: '#94A3B8' },
+                { label: 'Tempo Real Médio (Min)', data: reais, backgroundColor: '#2563EB' }
+            ];
+            chartProviderComparison.update();
+        }
+
+        // Atualizar Tabela de Auditoria
+        function updateTable() {
+            const prestadores = ['Guinchos Rápido', 'Socorro Total', 'Auto Resgate 24h', 'Litoral Assist', 'Chaveiro Express'];
+            const tbody = document.getElementById('table-providers-body');
+            tbody.innerHTML = '';
+
+            prestadores.forEach(p => {
+                const subset = filteredData.filter(d => d.prestador === p);
+                const total = subset.length;
+                if (total === 0) return;
+
+                const noPrazo = subset.filter(d => d.statusSLA === 'No Prazo').length;
+                const slaPct = ((noPrazo / total) * 100).toFixed(1);
+
+                const atrasados = subset.filter(d => d.statusSLA === 'Atrasado');
+                const avgDelay = atrasados.length > 0 
+                    ? Math.round(atrasados.reduce((a, b) => a + b.minutosAtraso, 0) / atrasados.length)
+                    : 0;
+
+                const prom = subset.filter(d => d.classNPS === 'Promotor').length;
+                const det = subset.filter(d => d.classNPS === 'Detrator').length;
+                const nps = Math.round(((prom - det) / total) * 100);
+
+                // Regra do Farol (Status Badge)
+                let badgeClass = '';
+                let badgeText = '';
+
+                if (slaPct >= 85) {
+                    badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                    badgeText = ' Conforme';
+                } else if (slaPct >= 75) {
+                    badgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
+                    badgeText = '⚠️ Sob Alerta';
+                } else {
+                    badgeClass = 'bg-rose-100 text-rose-800 border-rose-300 font-bold';
+                    badgeText = '🚨 Crítico / Notificar';
+                }
+
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50 transition";
+                row.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-900">${p}</td>
+                    <td class="p-4 text-center font-medium">${total}</td>
+                    <td class="p-4 text-center font-bold ${slaPct < 75 ? 'text-rose-600' : 'text-slate-800'}">${slaPct}%</td>
+                    <td class="p-4 text-center text-slate-600">${avgDelay} min</td>
+                    <td class="p-4 text-center font-semibold ${nps < 0 ? 'text-rose-600' : 'text-emerald-600'}">${nps}</td>
+                    <td class="p-4 text-center">
+                        <span class="inline-block px-3 py-1 text-xs rounded-full border ${badgeClass}">
+                            ${badgeText}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
