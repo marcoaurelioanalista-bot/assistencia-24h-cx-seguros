@@ -1,0 +1,74 @@
+import pandas as pd
+import numpy as np
+import random
+from datetime import datetime, timedelta
+
+# Configuração para reprodutibilidade
+np.random.seed(42)
+random.seed(42)
+
+n_chamados = 500
+
+# 1. Dados Básicos do Chamado
+ids = [f'AST-{str(i).zfill(5)}' for i in range(1, n_chamados + 1)]
+motivos = np.random.choice(['Pane Elétrica', 'Pneu Furado', 'Pane Seca', 'Colisão', 'Chaveiro'], n_chamados, p=[0.3, 0.2, 0.1, 0.25, 0.15])
+regioes = np.random.choice(['Capital', 'Região Metropolitana', 'Interior', 'Litoral'], n_chamados, p=[0.5, 0.25, 0.15, 0.1])
+
+# Prestadores fictícios parceiros da seguradora
+prestadores = np.random.choice(['Guinchos Rápido', 'Socorro Total', 'Auto Resgate 24h', 'Litoral Assist', 'Chaveiro Express'], n_chamados)
+
+# 2. Simulando SLAs e Tempos (em minutos)
+sla_prometido = np.where(motivos == 'Chaveiro', 45, np.where(regioes == 'Interior', 90, 60))
+
+# Criando o tempo real de chegada com alguns atrasos severos propositais
+tempo_real = []
+for sla in sla_prometido:
+    # 70% de chance de cumprir, 30% de atrasar
+    if random.random() < 0.7:
+        tempo = random.randint(20, sla)
+    else:
+        tempo = random.randint(sla + 1, sla + 120) # Atrasos de até 2 horas
+    tempo_real.append(tempo)
+
+# 3. Calculando o Status do SLA
+df = pd.DataFrame({
+    'ID_Chamado': ids,
+    'Regiao': regioes,
+    'Servico_Acionado': motivos,
+    'Prestador': prestadores,
+    'SLA_Prometido_Min': sla_prometido,
+    'Tempo_Real_Min': tempo_real
+})
+
+df['Status_SLA'] = np.where(df['Tempo_Real_Min'] <= df['SLA_Prometido_Min'], 'No Prazo', 'Atrasado')
+df['Minutos_Atraso'] = np.where(df['Status_SLA'] == 'Atrasado', df['Tempo_Real_Min'] - df['SLA_Prometido_Min'], 0)
+
+# 4. Simulando NPS baseado na experiência (Atraso derruba a nota)
+notas_nps = []
+for index, row in df.iterrows():
+    if row['Status_SLA'] == 'No Prazo':
+        nota = np.random.choice([8, 9, 10], p=[0.2, 0.4, 0.4]) # Cliente feliz
+    else:
+        # Quanto maior o atraso, pior a nota
+        if row['Minutos_Atraso'] > 60:
+            nota = np.random.choice([1, 2, 3]) # Cliente furioso
+        elif row['Minutos_Atraso'] > 30:
+            nota = np.random.choice([4, 5, 6]) # Cliente insatisfeito
+        else:
+            nota = np.random.choice([6, 7, 8]) # Atraso leve, nota neutra
+    notas_nps.append(nota)
+
+df['Nota_NPS'] = notas_nps
+
+# Classificação clássica do NPS
+def classificar_nps(nota):
+    if nota >= 9: return 'Promotor'
+    elif nota >= 7: return 'Neutro'
+    else: return 'Detrator'
+
+df['Classificacao_NPS'] = df['Nota_NPS'].apply(classificar_nps)
+
+# Exportando a base
+df.to_csv('assistencia_24h_cx.csv', index=False)
+print("Base gerada! Arquivo 'assistencia_24h_cx.csv' pronto para análise.")
+display(df.head(10))
